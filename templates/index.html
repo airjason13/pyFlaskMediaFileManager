@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>檔案上傳 / 列表</title>
+  <style>
+    body { font-family: ui-sans-serif, system-ui; max-width: 720px; margin: 2rem auto; }
+    .msg { background: #f4f8ff; border: 1px solid #c9defc; padding: .5rem .75rem; border-radius: .5rem; margin-bottom: .75rem; }
+    ul { line-height: 1.9; }
+    code { background: #f6f8fa; padding: 0 .25rem; border-radius: 4px; }
+  </style>
+</head>
+<body>
+  <h1>檔案上傳 / 列表</h1>
+
+  <!-- 訊息 -->
+  {% with messages = get_flashed_messages() %}
+    {% if messages %}
+      {% for m in messages %}
+        <div class="msg">{{ m }}</div>
+      {% endfor %}
+    {% endif %}
+  {% endwith %}
+
+  <!-- 上傳表單 -->
+  <h2>上傳檔案（允許：.mp4, .jpg, .png）</h2>
+  <form method="post" enctype="multipart/form-data">
+    <input type="file" name="file" multiple
+           accept=".mp4,.jpg,.jpeg,.png,image/jpeg,video/mp4">
+    <button type="submit">Upload</button>
+  </form>
+  <p>單檔最大：<code>{{ (max_size // (1024*1024)) }} MB</code></p>
+
+  <!-- 檔案清單 -->
+  <h2>已上傳檔案</h2>
+  <ul>
+    {% for f in files %}
+      <li><a href="{{ url_for('download_file', filename=f) }}">{{ f }}</a></li>
+    {% else %}
+      <li>目前沒有檔案。</li>
+    {% endfor %}
+  </ul>
+</body>
+</html>
