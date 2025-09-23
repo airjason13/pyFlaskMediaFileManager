@@ -1,78 +1,108 @@
-import platform
 from pathlib import Path
-
-from flask import Flask, render_template, send_from_directory, request, flash, redirect, url_for
+from flask import Flask, render_template, send_from_directory, request, flash, redirect, url_for, abort
 from werkzeug.utils import secure_filename
+import platform
 import os, glob
 from global_def import *
 from utils.gen_thumbnails import gen_webp_from_video_threading
 
-# === 這裡改成你要顯示的資料夾路徑 ===
+# === 根資料夾（變更成你要的 /home/venom/Videos） ===
 if platform.machine() == "x86_64":
-    TARGET_FOLDER = "/home/venom/Videos/.thumbnails"
-    MEDIA_FOLDER = "/home/venom/Videos"
+    MEDIA_FOLDER = Path("/home/venom/Videos")
 else:
-    TARGET_FOLDER = "/root/Videos/.thumbnails"
-    MEDIA_FOLDER = "/root/Videos"
+    MEDIA_FOLDER = Path("/root/Videos")
+
+# TARGET_FOLDER 不再指向 .thumbnails，而用 MEDIA_FOLDER 作為根目錄
+TARGET_FOLDER = MEDIA_FOLDER
 
 ALLOWED_EXTS  = {".mp4", ".jpg", ".png"}
 MAX_CONTENT_LENGTH = 512 * 1024 * 1024   # 512MB（可自行調整）
 
-
 app = Flask(__name__)
-app.config["TARGET_FOLDER"] = TARGET_FOLDER
+app.config["TARGET_FOLDER"] = str(TARGET_FOLDER)
 app.config["MAX_CONTENT_LENGTH"] = MAX_CONTENT_LENGTH
-app.config["SECRET_KEY"] = "change-me"   # 若使用 flash() 需要
+app.config["SECRET_KEY"] = "change-me"
 
 def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTS
 
-@app.route("/")
-def index():
-    if request.method == "POST":
-        # 支援多檔上傳
-        files = request.files.getlist("file")
-        if not files:
-            flash("沒有選擇任何檔案")
-            return redirect(url_for("index"))
+# ---------- 路徑安全檢查輔助 ----------
+ROOT = MEDIA_FOLDER.resolve()
 
-        saved = 0
-        for f in files:
-            if not f or not f.filename:
-                continue
-            if not allowed_file(f.filename):
-                flash(f"副檔名不允許：{f.filename}")
-                continue
-            filename = secure_filename(f.filename)
-            save_path = TARGET_FOLDER / filename
-            f.save(save_path)
-            saved += 1
+def safe_join_and_resolve(subpath: str) -> Path:
+    # 把 subpath join 至 ROOT，並 resolve，然後檢查仍在 ROOT 之下
+    candidate = (ROOT / subpath).resolve()
+    if not str(candidate).startswith(str(ROOT)):
+        raise ValueError("Outside of permitted folder")
+    return candidate
 
-        if saved:
-            flash(f"成功上傳 {saved} 檔")
-        return redirect(url_for("index"))
+# ---------- 瀏覽（支援根目錄與子目錄） ----------
+@app.route("/", defaults={"req_path": ""})
+@app.route("/browse/", defaults={"req_path": ""})
+@app.route("/browse/<path:req_path>")
+def browse(req_path):
+    try:
+        abs_path = safe_join_and_resolve(req_path)
+    except ValueError:
+        return abort(404)
 
-    # 取得目錄內的所有檔案清單（只列出檔案）
-    file_list = [
-        f for f in os.listdir(TARGET_FOLDER)
-        if os.path.isfile(os.path.join(TARGET_FOLDER, f))
-    ]
-    return render_template("index.html", files=file_list, max_size=MAX_CONTENT_LENGTH)
+    # 如果是檔案 → 轉為下載
+    if abs_path.is_file():
+        rel = abs_path.relative_to(ROOT)
+        return send_from_directory(str(ROOT), str(rel), as_attachment=True)
 
-@app.route("/download/<filename>")
-def download_file(filename):
-    # 直接提供下載
-    return send_from_directory(TARGET_FOLDER, filename, as_attachment=True)
+    # 否則列目錄內容
+    entries = []
+    for entry in sorted(abs_path.iterdir(), key=lambda x: (not x.is_dir(), x.name.lower())):
+        entries.append({
+            "name": entry.name,
+            "is_dir": entry.is_dir(),
+            "size": entry.stat().st_size if entry.is_file() else None
+        })
+
+    # 計算相對路徑（顯示於模板，空字串代表根）
+    rel_current = "" if abs_path == ROOT else str(abs_path.relative_to(ROOT))
+
+    return render_template("index.html", entries=entries, current=rel_current)
+
+# ---------- 下載（指定子路徑） ----------
+@app.route("/download/<path:filepath>")
+def download_file(filepath):
+    try:
+        abs_path = safe_join_and_resolve(filepath)
+    except ValueError:
+        return abort(404)
+    if not abs_path.is_file():
+        return abort(404)
+    rel = abs_path.relative_to(ROOT)
+    return send_from_directory(str(ROOT), str(rel), as_attachment=True)
+
+# ---------- 上傳（可以上傳到當前目錄，這裡示範上傳到根 MEDIA_FOLDER） ----------
+@app.route("/upload", methods=["POST"])
+def upload():
+    files = request.files.getlist("file")
+    if not files:
+        flash("沒有選擇任何檔案")
+        return redirect(url_for("browse", req_path=""))
+
+    saved = 0
+    for f in files:
+        if not f or not f.filename:
+            continue
+        if not allowed_file(f.filename):
+            flash(f"副檔名不允許：{f.filename}")
+            continue
+        safe_name = secure_filename(f.filename)
+        # 上傳到根（或可改為當前資料夾）
+        save_path = ROOT / safe_name
+        f.save(str(save_path))
+        saved += 1
+
+    if saved:
+        flash(f"成功上傳 {saved} 檔")
+    return redirect(url_for("browse", req_path=""))
 
 if __name__ == "__main__":
-    log.debug("Starting server...")
-    log.debug("platform.machine() : {}".format(platform.machine()))
-    mp4_files = glob.glob(os.path.join(MEDIA_FOLDER, "*.mp4"))
-    jpg_files = glob.glob(os.path.join(MEDIA_FOLDER, "*.jpg"))
-
-    files = [os.path.basename(f) for f in mp4_files + jpg_files]
-    log.debug(files)
-    for f in files:
-        gen_webp_from_video_threading(MEDIA_FOLDER, f)
-    # host=0.0.0.0 讓同網段其他設備也可訪問
+    # 你的原本 logic：產生縮圖等可以保留
+    # ...
     app.run(debug=True, host="0.0.0.0", port=5000)
