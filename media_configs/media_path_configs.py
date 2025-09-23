@@ -1,5 +1,5 @@
 
 MediaFileFolder = "/Videos"
-ThumbnailFileFolder = "/.thumbnails/"
+ThumbnailFileFolder = "/thumbnails/"
 PlaylistFolder = "/.playlists/"
 SubtitleFolder = "/.subtitle_data"

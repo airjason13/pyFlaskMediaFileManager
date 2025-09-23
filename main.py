@@ -105,4 +105,11 @@ def upload():
 if __name__ == "__main__":
     # 你的原本 logic：產生縮圖等可以保留
     # ...
+    mp4_files = glob.glob(os.path.join(str(MEDIA_FOLDER), "*.mp4"))
+    jpg_files = glob.glob(os.path.join(str(MEDIA_FOLDER), "*.jpg"))
+
+    files = [os.path.basename(f) for f in mp4_files + jpg_files]
+    log.debug(files)
+    for f in files:
+        gen_webp_from_video_threading(str(MEDIA_FOLDER), f)
     app.run(debug=True, host="0.0.0.0", port=5000)

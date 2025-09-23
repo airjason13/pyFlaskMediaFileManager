@@ -23,8 +23,11 @@ def gen_webp_from_video(file_folder, video):
     # log.debug("video_path = %s", video_path)
     # log.debug("thumbnail_path = %s", thumbnail_path)
     thunbnail_folder_path = os.path.expanduser("~" + MediaFileFolder) + ThumbnailFileFolder
-    if not os.path.exists(thunbnail_folder_path):
-        os.makedirs(thunbnail_folder_path)
+    try:
+        if not os.path.exists(thunbnail_folder_path):
+            os.makedirs(thunbnail_folder_path)
+    except OSError:
+        log.error("Could not create thumbnail folder " + thunbnail_folder_path)
     while True:
         try:
             if os.path.isfile(thumbnail_path) is False:
