@@ -6,11 +6,7 @@ import os, glob
 from global_def import *
 from utils.gen_thumbnails import gen_webp_from_video_threading
 
-# === 根資料夾（變更成你要的 /home/venom/Videos） ===
-if platform.machine() == "x86_64":
-    MEDIA_FOLDER = Path("/home/venom/Videos")
-else:
-    MEDIA_FOLDER = Path("/root/Videos")
+
 
 # TARGET_FOLDER 不再指向 .thumbnails，而用 MEDIA_FOLDER 作為根目錄
 TARGET_FOLDER = MEDIA_FOLDER
