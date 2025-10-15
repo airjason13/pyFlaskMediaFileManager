@@ -4,12 +4,13 @@ from werkzeug.utils import secure_filename
 import platform
 import os, glob
 from global_def import *
+from utils.file_utils import list_all_media
 from utils.gen_thumbnails import gen_webp_from_video_threading
 
 
 
 # TARGET_FOLDER 不再指向 .thumbnails，而用 MEDIA_FOLDER 作為根目錄
-TARGET_FOLDER = MEDIA_FOLDER
+TARGET_FOLDER = MEDIAFILE_URI_PATH
 
 ALLOWED_EXTS  = {".mp4", ".jpg", ".png"}
 MAX_CONTENT_LENGTH = 512 * 1024 * 1024   # 512MB（可自行調整）
@@ -23,7 +24,7 @@ def allowed_file(filename: str) -> bool:
     return Path(filename).suffix.lower() in ALLOWED_EXTS
 
 # ---------- 路徑安全檢查輔助 ----------
-ROOT = MEDIA_FOLDER.resolve()
+ROOT = Path(MEDIAFILE_URI_PATH).resolve()
 
 def safe_join_and_resolve(subpath: str) -> Path:
     # 把 subpath join 至 ROOT，並 resolve，然後檢查仍在 ROOT 之下
@@ -98,13 +99,20 @@ def upload():
         flash(f"成功上傳 {saved} 檔")
     return redirect(url_for("browse", req_path=""))
 
+
+
+
 if __name__ == "__main__":
     log.debug(f"Welcome to {Version}")
-    mp4_files = glob.glob(os.path.join(str(MEDIA_FOLDER), "*.mp4"))
-    jpg_files = glob.glob(os.path.join(str(MEDIA_FOLDER), "*.jpg"))
 
-    files = [os.path.basename(f) for f in mp4_files + jpg_files]
-    log.debug(f"Total files: {files}")
-    for f in files:
-        gen_webp_from_video_threading(str(MEDIA_FOLDER), f)
+    media_file_supported_ext = [".mp4", ".jpg", ".png", ".jpeg"]
+    media_dirs = [SNAPSHOTS_URI_PATH, RECORDINGS_URI_PATH, MEDIA_URI_PATH]
+
+    # 只列檔名
+    all_files = list_all_media(media_dirs, media_file_supported_ext, full_path=True)
+
+
+    log.debug(f"Total files: {all_files}")
+    for f in all_files:
+        gen_webp_from_video_threading(str(MEDIAFILE_URI_PATH), f)
     app.run(debug=True, host="0.0.0.0", port=5000)
