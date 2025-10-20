@@ -21,7 +21,7 @@ def gen_webp_from_video(file_folder, video_path):
     # thumbnail_path = video_path.replace(".mp4", ".webp")
     log.debug(f"file_folder: {file_folder}")
     file_name_prefix = str(file_folder).split("/")[-1]
-    new_file_name = f"{file_name_prefix}_{filename.replace('.mp4', '.webp')}.{video_extension}"
+    new_file_name = f"{file_name_prefix}_{filename.replace('.mp4', '.webp')}"
     #new_file_name = f"{video_name}.webp"
     thumbnail_path = THUMBNAILS_URI_PATH + new_file_name
     log.info(f"{thumbnail_path}")
