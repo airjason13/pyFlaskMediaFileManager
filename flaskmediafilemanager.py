@@ -114,5 +114,6 @@ if __name__ == "__main__":
 
     log.debug(f"Total files: {all_files}")
     for f in all_files:
-        gen_webp_from_video_threading(str(MEDIAFILE_URI_PATH), f)
+
+        gen_webp_from_video_threading(Path(f).parent, f)
     app.run(debug=True, host="0.0.0.0", port=5000)
