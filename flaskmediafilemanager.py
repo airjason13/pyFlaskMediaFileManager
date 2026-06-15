@@ -91,7 +91,10 @@ def upload():
             continue
         safe_name = secure_filename(f.filename)
         # 上傳到根（或可改為當前資料夾）
-        save_path = ROOT / safe_name
+
+        # save_path = ROOT /MEDIA_URI_PATH/ safe_name
+        save_path = Path(MEDIA_URI_PATH) / safe_name
+        log.debug(f"saving {save_path}")
         f.save(str(save_path))
         saved += 1
 
@@ -103,7 +106,7 @@ def upload():
 
 
 if __name__ == "__main__":
-    log.debug(f"Welcome to {Version}")
+    log.debug(f"Welcome to GIS {Version}")
 
     media_file_supported_ext = [".mp4", ".jpg", ".png", ".jpeg"]
     media_dirs = [SNAPSHOTS_URI_PATH, RECORDINGS_URI_PATH, MEDIA_URI_PATH]

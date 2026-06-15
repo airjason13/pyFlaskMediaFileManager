@@ -1,9 +1,9 @@
 """Software version"""
 Version_PN = "FlaskMediaFileManager"
-Version_Year = '2025'
-Version_Month = '10'
-Version_Date = '20'
-Version_Major = "02"
+Version_Year = '2026'
+Version_Month = '06'
+Version_Date = '15'
+Version_Major = "01"
 Version_Minor = "00"
 Version_Patch = "00"
 
