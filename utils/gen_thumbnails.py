@@ -20,6 +20,7 @@ def gen_webp_from_video(file_folder, video_path):
     preview_file_name = video_name
     # thumbnail_path = video_path.replace(".mp4", ".webp")
     log.debug(f"file_folder: {file_folder}")
+    log.debug(f"video_path: {video_path}")
     file_name_prefix = str(file_folder).split("/")[-1]
     new_file_name = f"{file_name_prefix}_{filename.replace('.mp4', '.webp')}"
     #new_file_name = f"{video_name}.webp"
@@ -52,7 +53,7 @@ def gen_webp_from_video(file_folder, video_path):
                         inputs={video_path: ['-ss', str(preview_start_time), '-t', str(preview_period)]},
                         outputs={thumbnail_path: ['-vf', scale_param]}
                     )
-                # log.debug("%s", ff.cmd)
+                log.debug("%s", ff.cmd)
                 ff.run()
         except Exception as e:
             log.debug("Excception %s", e)

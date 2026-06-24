@@ -5,7 +5,7 @@ import platform
 import os, glob
 from global_def import *
 from utils.file_utils import list_all_media
-from utils.gen_thumbnails import gen_webp_from_video_threading
+from utils.gen_thumbnails import gen_webp_from_video_threading, gen_webp_from_video
 
 
 
@@ -96,6 +96,13 @@ def upload():
         save_path = Path(MEDIA_URI_PATH) / safe_name
         log.debug(f"saving {save_path}")
         f.save(str(save_path))
+        f.truncate()
+        f.flush()
+        f.close()
+        os.sync()
+        gen_webp_from_video(save_path.parent, str(save_path))
+        os.sync()
+
         saved += 1
 
     if saved:
