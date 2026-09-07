@@ -77,6 +77,60 @@ def download_file(filepath):
 # ---------- 上傳（可以上傳到當前目錄，這裡示範上傳到根 MEDIA_FOLDER） ----------
 @app.route("/upload", methods=["POST"])
 def upload():
+    # 1. 取得前端傳來的當前目錄相對路徑
+    req_path = request.form.get("req_path", "")
+
+    try:
+        # 解析並確認上傳目標目錄在合法範圍內
+        upload_dir = safe_join_and_resolve(req_path)
+    except ValueError:
+        flash("不合法的路徑")
+        return redirect(url_for("browse", req_path=""))
+
+    files = request.files.getlist("file")
+    if not files:
+        flash("沒有選擇任何檔案")
+        return redirect(url_for("browse", req_path=req_path))
+
+    saved = 0
+    for f in files:
+        if not f or not f.filename:
+            continue
+        if not allowed_file(f.filename):
+            flash(f"副檔名不允許：{f.filename}")
+            continue
+
+        safe_name = secure_filename(f.filename)
+
+        # 2. 將存檔路徑從原本寫死的 MEDIA_URI_PATH 改為當下瀏覽的資料夾 upload_dir
+        save_path = upload_dir / safe_name
+        log.debug(f"saving {save_path}")
+        f.save(str(save_path))
+        f.truncate()
+        f.flush()
+        f.close()
+        os.sync()
+
+        # 3. 處理縮圖的 prefix (目錄名稱)
+        # 假設在根目錄上傳時不加 prefix，若在子目錄上傳則取資料夾名稱加上底線作為 prefix
+        dir_prefix = f"{upload_dir.name}_" if upload_dir != ROOT else ""
+
+        # 將 prefix 參數傳入縮圖生成函式
+        gen_webp_from_video(save_path.parent, str(save_path), prefix=dir_prefix)
+
+        os.sync()
+        saved += 1
+
+    if saved:
+        flash(f"成功上傳 {saved} 檔")
+
+    # 上傳完成後，重導向回剛剛所在的目錄
+    return redirect(url_for("browse", req_path=""))
+
+
+# ... 後面的程式碼保持不變 ...
+
+def upload_dep():
     files = request.files.getlist("file")
     if not files:
         flash("沒有選擇任何檔案")
