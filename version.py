@@ -2,7 +2,7 @@
 Version_PN = "FlaskMediaFileManager"
 Version_Year = '2026'
 Version_Month = '09'
-Version_Date = '04'
+Version_Date = '08'
 Version_Major = "01"
 Version_Minor = "00"
 Version_Patch = "00"

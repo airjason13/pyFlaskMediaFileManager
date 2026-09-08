@@ -78,7 +78,8 @@ def download_file(filepath):
 @app.route("/upload", methods=["POST"])
 def upload():
     # 1. 取得前端傳來的當前目錄相對路徑
-    req_path = request.form.get("req_path", "")
+    # 修改後：沒帶 req_path 或傳入空字串時，一律預設為 "Media"
+    req_path = request.form.get("req_path") or "Media"
 
     try:
         # 解析並確認上傳目標目錄在合法範圍內
